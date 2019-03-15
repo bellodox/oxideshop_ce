@@ -86,6 +86,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `\OxidEsales\EshopCommunity\Core\PasswordSaltGenerator` will no longer be needed and removed completely
 - `\OxidEsales\EshopCommunity\Core\Sha512Hasher` will no longer be needed and removed completely
 
+- Classes:
+    - `OxidEsales\EshopCommunity\Core\Module\ModuleInstaller` 
+
 ## [6.3.3] - Unreleased
 
 ### Added
