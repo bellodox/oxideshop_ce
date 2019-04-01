@@ -224,9 +224,15 @@ class ModuleActivationServiceTest extends TestCase
                 [
                     [
                         'group' => 'frontend',
-                        'name'  => 'sGridRow',
+                        'name'  => 'grid',
                         'type'  => 'str',
                         'value' => 'row',
+                    ],
+                    [
+                        'group' => 'frontend',
+                        'name'  => 'array',
+                        'type'  => 'arr',
+                        'value' => ['1', '2'],
                     ],
                 ]
             ));
