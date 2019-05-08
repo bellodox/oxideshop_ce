@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright © OXID eSales AG. All rights reserved.
  * See LICENSE file for license details.
@@ -43,7 +43,7 @@ class FileLocator implements FileLocatorInterface
      *
      * @return string The full path to the file
      */
-    public function locate($name)
+    public function locate($name): string
     {
         $templateName = $this->templateNameResolver->resolve($name, $this->templateEngine->getDefaultFileExtension());
         return $this->context->getTemplatePath($templateName, false);

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright © OXID eSales AG. All rights reserved.
  * See LICENSE file for license details.
@@ -45,7 +45,7 @@ class SmartyFactory implements SmartyFactoryInterface
     /**
      * @return Smarty
      */
-    public function getSmarty() : Smarty
+    public function getSmarty(): Smarty
     {
         $this->smarty = new Smarty();
 

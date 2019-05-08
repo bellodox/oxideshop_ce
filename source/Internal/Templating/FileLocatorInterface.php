@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright © OXID eSales AG. All rights reserved.
  * See LICENSE file for license details.
@@ -16,5 +16,5 @@ interface FileLocatorInterface
      *
      * @return string The full path to the file
      */
-    public function locate($name);
+    public function locate($name): string;
 }
