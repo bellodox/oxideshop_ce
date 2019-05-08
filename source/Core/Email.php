@@ -1267,7 +1267,7 @@ class Email extends PHPMailer
             $this->_setMailParams($shop);
             $lang = \OxidEsales\Eshop\Core\Registry::getLang();
 
-            $templating = $this->_getSmarty();
+            $templating = $this->getTemplateRenderer();
             $this->setViewData("articles", $articleList);
 
             // Process view data array through oxOutput processor
