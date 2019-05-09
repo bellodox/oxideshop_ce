@@ -96,11 +96,17 @@ class Module extends \OxidEsales\Eshop\Core\Base
     {
         $this->_aModule['id'] = $sModuleId;
 
-        $sModulePath = $this->getModuleFullPath($sModuleId);
-        $sMetadataPath = $sModulePath . "/metadata.php";
+        $container = ContainerFactory::getInstance()->getContainer();
+        $moduleConfiguration = $container->get(ModuleConfigurationDaoBridgeInterface::class)->get($sModuleId);
+        $sMetadataPath = $this->getModuleFullPath($sModuleId) . "/metadata.php";
 
-        if ($sModulePath && is_readable($sMetadataPath)) {
+        if (file_exists($sMetadataPath) && $moduleConfiguration) {
+
+            $aModule = [];
+
+            $this->setModuleData($aModule);
             $this->includeModuleMetaData($sMetadataPath);
+
             $this->_blRegistered = true;
             $this->_blMetadata = true;
             $this->_aModule['active'] = $this->isActive();
@@ -564,18 +570,11 @@ class Module extends \OxidEsales\Eshop\Core\Base
     protected function includeModuleMetaData($metadataPath)
     {
         include $metadataPath;
-        /**
-         * metadata.php should include a variable called $aModule, if this variable is not set,
-         * an empty array is assigned to self::aModule
-         */
-        if (!isset($aModule)) {
-            $aModule = [];
-        }
-        $this->setModuleData($aModule);
 
         /**
          * metadata.php should include a variable called $sMetadataVersion
          */
+
         if (isset($sMetadataVersion)) {
             $this->setMetaDataVersion($sMetadataVersion);
         }
