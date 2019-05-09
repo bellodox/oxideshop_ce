@@ -7,9 +7,8 @@
 namespace OxidEsales\EshopCommunity\Internal\Authentication\Service;
 
 use OxidEsales\EshopCommunity\Internal\Authentication\Exception\PasswordHashException;
-use OxidEsales\EshopCommunity\Internal\Authentication\Exception\UnavailablePasswordHash;
+use OxidEsales\EshopCommunity\Internal\Authentication\Exception\UnavailablePasswordHashException;
 use OxidEsales\EshopCommunity\Internal\Authentication\Policy\PasswordPolicyInterface;
-use Throwable;
 
 /**
  * Hashes with the ARGON2I algorithm
@@ -40,8 +39,7 @@ class Argon2IPasswordHashService implements PasswordHashServiceInterface
      * @param int                     $timeCost
      * @param int                     $threads
      *
-     * @throws UnavailablePasswordHash
-     * @throws PasswordHashException
+     * @throws UnavailablePasswordHashException
      */
     public function __construct(
         PasswordPolicyInterface $passwordPolicy,
@@ -49,8 +47,8 @@ class Argon2IPasswordHashService implements PasswordHashServiceInterface
         int $timeCost,
         int $threads
     ) {
-        if (!\defined('PASSWORD_ARGON2I')) {
-            throw new UnavailablePasswordHash(
+        if (!defined('PASSWORD_ARGON2I')) {
+            throw new UnavailablePasswordHashException(
                 'The password hash algorithm "PASSWORD_ARGON2I" is not available on your installation'
             );
         }
@@ -73,9 +71,6 @@ class Argon2IPasswordHashService implements PasswordHashServiceInterface
      */
     public function hash(string $password): string
     {
-        $hash = false;
-        $additionalErrorMessage = '';
-
         $this->passwordPolicy->enforcePasswordPolicy($password);
 
         $hash = password_hash(

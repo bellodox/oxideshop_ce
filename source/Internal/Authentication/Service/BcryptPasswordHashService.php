@@ -8,7 +8,6 @@ namespace OxidEsales\EshopCommunity\Internal\Authentication\Service;
 
 use OxidEsales\EshopCommunity\Internal\Authentication\Exception\PasswordHashException;
 use OxidEsales\EshopCommunity\Internal\Authentication\Policy\PasswordPolicyInterface;
-use Throwable;
 
 /**
  * Class BcryptPasswordHashService
@@ -56,8 +55,6 @@ class BcryptPasswordHashService implements PasswordHashServiceInterface
      */
     public function hash(string $password): string
     {
-        $hash = false;
-
         $this->passwordPolicy->enforcePasswordPolicy($password);
 
         $hash = password_hash(

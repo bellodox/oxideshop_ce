@@ -6,12 +6,12 @@
 
 namespace OxidEsales\EshopCommunity\Tests\Unit\Internal\Authentication\Service;
 
+use Exception;
 use OxidEsales\EshopCommunity\Internal\Authentication\Exception\PasswordHashException;
 use OxidEsales\EshopCommunity\Internal\Authentication\Service\Argon2IPasswordHashService;
 use OxidEsales\EshopCommunity\Internal\Authentication\Service\PasswordHashServiceInterface;
 use OxidEsales\EshopCommunity\Internal\Authentication\Policy\PasswordPolicyInterface;
 use PHPUnit\Framework\TestCase;
-use TypeError;
 
 
 /**
@@ -21,48 +21,45 @@ class Argon2IPasswordHashServiceTest extends TestCase
 {
 
     /**
-     *
+     * @throws PasswordHashException
+     * @throws \OxidEsales\EshopCommunity\Internal\Authentication\Exception\UnavailablePasswordHashException
      */
-    protected function setUp()
+    public function testConstructorThrowsExceptionIfArgon2INotAvailable()
     {
-        if (!defined('PASSWORD_ARGON2I')) {
-            $this->markTestSkipped('The password hashing algorithm "PASSWORD_ARGON2I" is not available');
-        }
-        $this->hashingAlgorithm = PASSWORD_ARGON2I;
+        $this->skipTestIfArgon2IAvailable();
+        $passwordPolicyMock = $this->getPasswordPolicyMock();
+
+        new Argon2IPasswordHashService(
+            $passwordPolicyMock,
+            1024,
+            2,
+            2
+        );
     }
 
-    /**
-     *
-     */
     public function testHashForGivenPasswordIsEncryptedWithProperAlgorithm()
     {
-        $password = 'secret';
+        $this->skipTestIfArgon2INotAvailable();
         $passwordHashService = $this->getPasswordHashService();
-        $hash = $passwordHashService->hash($password);
+        $hash = $passwordHashService->hash('secret');
         $info = password_get_info($hash);
 
-        $this->assertSame($this->hashingAlgorithm, $info['algo']);
+        $this->assertSame(PASSWORD_ARGON2I, $info['algo']);
     }
 
-    /**
-     *
-     */
     public function testHashForEmptyPasswordIsEncryptedWithProperAlgorithm()
     {
-        $password = '';
-
+        $this->skipTestIfArgon2INotAvailable();
         $passwordHashService = $this->getPasswordHashService();
-        $hash = $passwordHashService->hash($password);
+        $hash = $passwordHashService->hash('');
         $info = password_get_info($hash);
 
-        $this->assertSame($this->hashingAlgorithm, $info['algo']);
+        $this->assertSame(PASSWORD_ARGON2I, $info['algo']);
     }
 
-    /**
-     *
-     */
     public function testConsecutiveHashingTheSamePasswordProducesDifferentHashes()
     {
+        $this->skipTestIfArgon2INotAvailable();
         $password = 'secret';
 
         $passwordHashService = $this->getPasswordHashService();
@@ -75,42 +72,28 @@ class Argon2IPasswordHashServiceTest extends TestCase
     /**
      * Invalid values as a memory cost value of 2^32 + 1 can cause the method hash to fail.
      *
-     * @expectedException TypeError
+     * @expectedException \PHPUnit\Framework\Error\Warning
      */
     public function testHashThrowsExceptionOnInvalidSettings()
     {
-        $options = [
-            1 << 32, // The value 2^32 is out of range and will produce a PHP Warning.
-            PASSWORD_ARGON2_DEFAULT_TIME_COST,
-            PASSWORD_ARGON2_DEFAULT_THREADS
-        ];
+        $this->skipTestIfArgon2INotAvailable();
 
         $passwordPolicyMock = $this->getPasswordPolicyMock();
 
         $passwordHashService = new Argon2IPasswordHashService(
             $passwordPolicyMock,
-            $options
+            1 << 32, // The value 2^32 is out of range and will produce a PHP Warning.
+            PASSWORD_ARGON2_DEFAULT_TIME_COST,
+            PASSWORD_ARGON2_DEFAULT_THREADS
         );
 
         $passwordHashService->hash('secret');
     }
 
-
-    /**
-     */
     public function testPasswordNeedsRehashReturnsTrueOnChangedAlgorithm()
     {
-        $originalAlgorithm = 'PASSWORD_BCRYPT';
-        $newAlgorithm = 'PASSWORD_ARGON2I';
-        if (!defined($originalAlgorithm) || !defined($newAlgorithm)) {
-            $this->markTestSkipped(
-                'The password hashing algorithms "' . $originalAlgorithm . '" and/or "' . $newAlgorithm . '" are not available'
-            );
-        }
-
+        $this->skipTestIfArgon2INotAvailable();
         $passwordHashedWithOriginalAlgorithm = password_hash('secret', PASSWORD_BCRYPT);
-
-
         $passwordHashService = $this->getPasswordHashService();
 
         $this->assertTrue(
@@ -118,9 +101,9 @@ class Argon2IPasswordHashServiceTest extends TestCase
         );
     }
 
-
     public function testHashWithValidCostOption()
     {
+        $this->skipTestIfArgon2INotAvailable();
         $passwordHashService = $this->getPasswordHashService();
         $hash = $passwordHashService->hash('secret');
 
@@ -135,52 +118,6 @@ class Argon2IPasswordHashServiceTest extends TestCase
             ],
             $info['options']
         );
-    }
-
-    /**
-     * @dataProvider invalidOptionsDataProvider
-     *
-     * @param mixed $invalidCostOption
-     */
-    public function testHashWithInvalidCostOptionValueThrowsPasswordHashException($invalidCostOption)
-    {
-        $this->expectException(TypeError::class);
-
-        $passwordPolicy = $this->getPasswordPolicyMock();
-        new Argon2IPasswordHashService(
-            $passwordPolicy,
-            $invalidCostOption
-        );
-    }
-
-    /**
-     * @return array
-     */
-    public function invalidOptionsDataProvider(): array
-    {
-        return [
-            [
-                [
-                    '1',
-                    1,
-                    1
-                ]
-            ],
-            [
-                [
-                    1,
-                    false,
-                    1
-                ]
-            ],
-            [
-                [
-                    1,
-                    1,
-                    []
-                ]
-            ]
-        ];
     }
 
     /**
@@ -211,5 +148,29 @@ class Argon2IPasswordHashServiceTest extends TestCase
             ->getMock();
 
         return $passwordPolicyMock;
+    }
+
+    /**
+     * PHP > 7.2 is compiled by default with support for ARGON2I. Instead of checking for the constant PASSWORD_ARGON2I,
+     * we check for the PHP version in order to run this test and get an alarm if ARGON2I is not compiled into
+     * the PHP version on the server.
+     */
+    private function skipTestIfArgon2INotAvailable()
+    {
+        if (version_compare(PHP_VERSION, '7.2') < 0) {
+            $this->markTestSkipped('The password hashing algorithm "PASSWORD_ARGON2I" is not available');
+        }
+    }
+
+    /**
+     * PHP > 7.2 is compiled by default with support for ARGON2I. Instead of checking for the constant PASSWORD_ARGON2I,
+     * we check for the PHP version in order to run this test and get an alarm if ARGON2I is not compiled into
+     * the PHP version on the server.
+     */
+    private function skipTestIfArgon2IAvailable()
+    {
+        if (version_compare(PHP_VERSION, '7.2') >= 0) {
+            $this->markTestSkipped('This test can not be executed because the password hashing algorithm "PASSWORD_ARGON2I" is available.');
+        }
     }
 }

@@ -6,9 +6,11 @@
 
 namespace OxidEsales\EshopCommunity\Tests\Integration\Internal\Password\Bridge;
 
+use OxidEsales\EshopCommunity\Internal\Application\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Authentication\Bridge\PasswordServiceBridgeInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\Internal\ContainerTrait;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 
 /**
  *
@@ -33,7 +35,7 @@ class PasswordServiceBridgeTest extends TestCase
     /**
      * End-to-end test for the password verification service.
      */
-    public function testVerifyPasswordWithBcrypt()
+    public function testVerifyPassword()
     {
         /** @var PasswordServiceBridgeInterface $passwordServiceBridge */
         $passwordServiceBridge = $this->get(PasswordServiceBridgeInterface::class);
@@ -46,23 +48,32 @@ class PasswordServiceBridgeTest extends TestCase
         );
     }
 
-    /**
-     * End-to-end test for the password verification service.
-     */
-    public function testVerifyPasswordWithArgon2i()
+    public function testPasswordNeedsRehash()
     {
-        if (!defined('PASSWORD_ARGON2I')) {
-            $this->markTestSkipped('The password hashing algorithm "PASSWORD_ARGON2I" is not available');
-        }
-
         /** @var PasswordServiceBridgeInterface $passwordServiceBridge */
         $passwordServiceBridge = $this->get(PasswordServiceBridgeInterface::class);
 
-        $password = 'secret';
-        $passwordHash = password_hash($password, PASSWORD_ARGON2I);
+        $container = $this->getContainer();
+        $cost = $container->getParameter('oxid_esales.authentication.service.password_hash.bcrypt.cost');
 
-        $this->assertTrue(
-            $passwordServiceBridge->verifyPassword($password, $passwordHash)
+        $passwordHashWithCostFromConfiguration = password_hash('secret', PASSWORD_BCRYPT, ['cost' => $cost]);
+        $passwordHashWithCostChangedCost = password_hash('secret', PASSWORD_BCRYPT, ['cost' => $cost + 1]);
+
+        $this->assertFalse(
+            $passwordServiceBridge->passwordNeedsRehash($passwordHashWithCostFromConfiguration)
         );
+        $this->assertTrue(
+            $passwordServiceBridge->passwordNeedsRehash($passwordHashWithCostChangedCost)
+        );
+    }
+
+    /**
+     * @return ContainerInterface
+     */
+    private function getContainer() : ContainerInterface
+    {
+        $factory = ContainerFactory::getInstance();
+
+        return $factory->getContainer();
     }
 }

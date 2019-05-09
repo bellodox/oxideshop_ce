@@ -80,11 +80,9 @@ class BcryptPasswordHashServiceTest extends TestCase
 
     public function testHashWithWithValidCostOptionValue()
     {
-        $passwordPolicy = $this->getPasswordPolicyMock();
+        $passwordHashService = $this->getPasswordHashServiceMock(4);
 
-        $bcryptPasswordHashService =  new BcryptPasswordHashService($passwordPolicy,4);
-
-        $hash = $bcryptPasswordHashService->hash('secret');
+        $hash = $passwordHashService->hash('secret');
         $info = password_get_info($hash);
 
         $this->assertSame(4, $info['options']['cost']);
@@ -99,15 +97,8 @@ class BcryptPasswordHashServiceTest extends TestCase
     {
         $this->expectException(PasswordHashException::class);
 
-        $passwordPolicy = $this->getPasswordPolicyMock();
-
-        $bcryptPasswordHashService = new BcryptPasswordHashService(
-            $passwordPolicy,
-            $invalidCostOption
-        );
+        $this->getPasswordHashServiceMock($invalidCostOption);
         $bcryptPasswordHashService->hash('secret');
-
-
     }
 
     /**
@@ -124,15 +115,17 @@ class BcryptPasswordHashServiceTest extends TestCase
     }
 
     /**
+     * @param int $cost
+     *
      * @return PasswordHashServiceInterface
      */
-    private function getPasswordHashServiceMock(): PasswordHashServiceInterface
+    private function getPasswordHashServiceMock(int $cost = 4): PasswordHashServiceInterface
     {
         $passwordPolicy = $this->getPasswordPolicyMock();
 
         $passwordHashService = new BcryptPasswordHashService(
             $passwordPolicy,
-            4
+            $cost
         );
 
         return $passwordHashService;
